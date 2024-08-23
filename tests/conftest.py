@@ -6,7 +6,7 @@ import tiktoken
 from ecologits import EcoLogits
 
 
-tiktoken.get_encoding("cl100k_base")
+#tiktoken.get_encoding("cl100k_base")
 
 
 @pytest.fixture(autouse=True)
@@ -17,8 +17,9 @@ def environment():
     set_envvar_if_unset("CO_API_KEY", "test-api-key")
     set_envvar_if_unset("GOOGLE_API_KEY", "test-api-key")
     set_envvar_if_unset("AZURE_OPENAI_API_KEY", "test-api-key")
-    set_envvar_if_unset("AZURE_OPENAI_ENDPOINT", "test-api-key")
-    set_envvar_if_unset("OPENAI_API_VERSION", "test-api-key")
+    set_envvar_if_unset("AZURE_OPENAI_ENDPOINT", "https://fakeservice.openai.azure.com/openai/deployments")
+    set_envvar_if_unset("OPENAI_API_VERSION", "2024-02-01")
+    set_envvar_if_unset("AZURE_MODEL_DEPLOYMENT", "openai")
 
 
 
