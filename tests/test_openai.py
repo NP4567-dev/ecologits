@@ -71,6 +71,5 @@ def test_azure_openai_stream_chat(tracer_init):
         stream=True
     )
     for chunk in stream:
-        print(chunk)
         assert chunk.impacts.energy.value >= 0
         
