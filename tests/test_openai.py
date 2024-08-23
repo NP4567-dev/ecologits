@@ -1,7 +1,6 @@
 import os
 import pytest
 from openai import OpenAI, AsyncOpenAI, AzureOpenAI, AsyncAzureOpenAI
-import httpx
 
 @pytest.mark.vcr
 def test_openai_chat(tracer_init):

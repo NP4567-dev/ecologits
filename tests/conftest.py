@@ -6,7 +6,7 @@ import tiktoken
 from ecologits import EcoLogits
 
 
-#tiktoken.get_encoding("cl100k_base")
+tiktoken.get_encoding("cl100k_base")
 
 
 @pytest.fixture(autouse=True)
