@@ -1,4 +1,5 @@
 import importlib.util
+import logging
 
 from packaging.version import Version
 
@@ -36,21 +37,44 @@ class EcoLogits:
     initialized = False
 
     @staticmethod
-    def init() -> None:
+    def init(publishers: list[str] = []) -> None:
         """Initialization static method."""
         if not EcoLogits.initialized:
-            init_instruments()
+            init_instruments(publishers)
             EcoLogits.initialized = True
 
 
-def init_instruments() -> None:
-    init_openai_instrumentor()
-    init_anthropic_instrumentor()
-    init_mistralai_instrumentor()
-    init_huggingface_instrumentor()
-    init_cohere_instrumentor()
-    init_google_instrumentor()
-    init_litellm_instrumentor()
+def init_instruments(publishers: list[str] | str | None = None) -> None:
+    all_publishers = {
+        "openai": init_openai_instrumentor,
+        "anthropic": init_anthropic_instrumentor,
+        "mistralai": init_mistralai_instrumentor,
+        "huggingface": init_huggingface_instrumentor,
+        "cohere": init_cohere_instrumentor,
+        "google": init_google_instrumentor,
+        "litellm": init_litellm_instrumentor,
+    }
+    wrong_publishers = []
+
+    if isinstance(publishers, str):
+        publishers = [publishers]
+
+    if publishers is None:
+        selected_instrumentors = [instrumentor_init for publisher, instrumentor_init in all_publishers.items()]
+    else:
+        selected_instrumentors = {publisher: all_publishers.get(publisher) for publisher in publishers}
+        wrong_publishers = [
+            publisher for publisher, instrumentor_init in selected_instrumentors.items() if instrumentor_init is None
+        ]
+        if len(wrong_publishers) > 0:
+            logging.warning(f"The following publishers were not found: {','.join(wrong_publishers)}")
+
+    if len(selected_instrumentors) > len(wrong_publishers):
+        [
+            instrumentor_init()
+            for _, instrumentor_init in selected_instrumentors.items()
+            if instrumentor_init is not None
+        ]
 
 
 def init_openai_instrumentor() -> None:
@@ -97,7 +121,7 @@ def init_cohere_instrumentor() -> None:
 
 
 def init_google_instrumentor() -> None:
-    if importlib.util.find_spec("google.generativeai") is not None:
+    if importlib.util.find_spec("google-generativeai") is not None:
         from ecologits.tracers.google_tracer import GoogleInstrumentor
 
         instrumentor = GoogleInstrumentor()
