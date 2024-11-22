@@ -155,12 +155,12 @@ async def google_async_chat_wrapper_non_stream(
     return response
 
 
-async def google_async_chat_wrapper_stream(
+async def google_async_chat_wrapper_stream(  # type: ignore[misc]
     wrapped: Callable,
     instance: GenerativeModel,
     args: Any,
     kwargs: Any,
-) -> Iterable[AsyncGenerateContentResponse]:
+) -> Iterable[AsyncGenerateContentResponse]:# type: ignore[misc]
     model_name = instance.model_name.replace("models/", "")
     timer_start = time.perf_counter()
     stream = await wrapped(*args, **kwargs)

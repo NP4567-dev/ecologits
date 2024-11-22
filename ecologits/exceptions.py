@@ -10,3 +10,12 @@ class TracerInitializationError(EcoLogitsError):
 class ModelingError(EcoLogitsError):
     """Operation or computation not allowed"""
     pass
+
+
+class NoElectricityMixError(EcoLogitsError):
+    """No electricity mix found"""
+    pass
+
+class ModelNotFoundError(EcoLogitsError):
+    """No model found"""
+    pass

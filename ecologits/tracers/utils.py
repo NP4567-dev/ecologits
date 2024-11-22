@@ -1,6 +1,6 @@
-from typing import Optional
 
 from ecologits.electricity_mix_repository import electricity_mixes
+from ecologits.exceptions import ModelNotFoundError, NoElectricityMixError
 from ecologits.impacts.llm import compute_llm_impacts
 from ecologits.impacts.modeling import Impacts
 from ecologits.log import logger
@@ -16,8 +16,8 @@ def llm_impacts(
     model_name: str,
     output_token_count: int,
     request_latency: float,
-    electricity_mix_zone: Optional[str] = "WOR",
-) -> Optional[Impacts]:
+    electricity_mix_zone: str = "WOR",
+) -> Impacts:
     """
     High-level function to compute the impacts of an LLM generation request.
 
@@ -30,27 +30,34 @@ def llm_impacts(
 
     Returns:
         The impacts of an LLM generation request.
+
+    Raises:
+        ModelNotFoundError: Exception raised when no model is found
+        NoElectricityMixError: Exception raised when no electricity is found
     """
 
     model = models.find_model(provider=provider, model_name=model_name)
     if model is None:
         logger.debug(f"Could not find model `{model_name}` for {provider} provider.")
-        return None
-
+        raise ModelNotFoundError(f"Could not find model `{model_name}` for {provider} provider.")
+    # TODO: replace those if/else caused by the enum with abstractions of Model and remove type: ignore
     if model.architecture.type == ArchitectureTypes.MOE:
-        model_total_params = model.architecture.parameters.total
-        model_active_params = model.architecture.parameters.active
+        model_total_params = model.architecture.parameters.total # type: ignore[union-attr]
+        model_active_params = model.architecture.parameters.active # type: ignore[union-attr]
     else:
         model_total_params = model.architecture.parameters
         model_active_params = model.architecture.parameters
 
     electricity_mix = electricity_mixes.find_electricity_mix(zone=electricity_mix_zone)
+
     if electricity_mix is None:
         logger.debug(f"Could not find electricity mix `{electricity_mix_zone}` in the ADEME database")
-        return None
+        raise NoElectricityMixError(f"Could not find electricity mix `{electricity_mix_zone}` in the ADEME database")
+
     if_electricity_mix_adpe=electricity_mix.adpe
     if_electricity_mix_pe=electricity_mix.pe
     if_electricity_mix_gwp=electricity_mix.gwp
+
     return compute_llm_impacts(
         model_active_parameter_count=model_active_params,
         model_total_parameter_count=model_total_params,

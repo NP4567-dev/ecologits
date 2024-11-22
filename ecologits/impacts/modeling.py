@@ -34,14 +34,14 @@ class Impact(BaseModel):
             unit=self.unit
         )
 
-    def __eq__(self, other: "Impact") -> bool:
+    def __eq__(self, other: object) -> bool:
         if not isinstance(other, Impact):
             raise ModelingError(f"Error occurred, cannot compare an Impact with {type(other)}.")
         if self.type != other.type:
             raise ModelingError(f"Error occurred, cannot compare a {self.type} Impact with {other.type} Impact.")
         return self.value == other.value
 
-    def __le__(self, other: "Impact") -> bool:
+    def __le__(self, other: object) -> bool:
         if not isinstance(other, Impact):
             raise ModelingError(f"Error occurred, cannot compare an Impact with {type(other)}.")
         if self.type != other.type:

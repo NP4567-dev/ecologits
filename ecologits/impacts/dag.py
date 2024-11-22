@@ -5,8 +5,8 @@ from typing import Any, Callable
 
 class DAG:
     def __init__(self) -> None:
-        self.tasks = {}
-        self.dependencies = {}
+        self.tasks: dict[str,Callable] = {}
+        self.dependencies: dict[str, set[str]] = {}
 
     def asset(self, func: Callable) -> Callable:
         @wraps(func)

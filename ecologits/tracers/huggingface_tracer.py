@@ -19,11 +19,11 @@ except ImportError:
     AsyncInferenceClient = object()
 
     @dataclass
-    class _ChatCompletionOutput:
+    class _ChatCompletionOutput:# type: ignore[no-redef]
         pass
 
     @dataclass
-    class _ChatCompletionStreamOutput:
+    class _ChatCompletionStreamOutput:# type: ignore[no-redef]
         pass
 
 

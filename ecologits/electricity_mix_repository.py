@@ -16,7 +16,7 @@ class ElectricityMixRepository:
     def __init__(self, electricity_mixes: list[ElectricityMix]) -> None:
         self.__electricity_mixes = electricity_mixes
 
-    def find_electricity_mix(self, zone: str) -> Optional[ElectricityMix]:
+    def find_electricity_mix(self, zone: str) -> ElectricityMix | None:
         for electricity_mix in self.__electricity_mixes:
             if electricity_mix.zone == zone:
                 return electricity_mix

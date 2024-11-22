@@ -1,7 +1,7 @@
 from pathlib import Path
 from typing import Optional
 
-import toml
+import toml # type: ignore
 
 from ecologits import __version__
 
