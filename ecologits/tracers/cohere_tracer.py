@@ -5,7 +5,9 @@ from typing import Any, Callable
 from wrapt import wrap_function_wrapper
 
 from ecologits._ecologits import EcoLogits
+from ecologits.exceptions import ModelNotFoundError, NoElectricityMixError
 from ecologits.impacts import Impacts
+from ecologits.log import logger
 from ecologits.tracers.utils import llm_impacts
 
 try:
@@ -47,13 +49,16 @@ def cohere_chat_wrapper(
     request_latency = time.perf_counter() - timer_start
     output_tokens = response.meta.tokens.output_tokens
     model_name = kwargs.get("model", "command-r")
-    impacts = llm_impacts(
-        provider=PROVIDER,
-        model_name=model_name,
-        output_token_count=output_tokens,
-        request_latency=request_latency,
-        electricity_mix_zone=EcoLogits.config.electricity_mix_zone
-    )
+    try:
+        impacts = llm_impacts(
+            provider=PROVIDER,
+            model_name=model_name,
+            output_token_count=output_tokens,
+            request_latency=request_latency,
+            electricity_mix_zone=EcoLogits.config.electricity_mix_zone
+        )
+    except (NoElectricityMixError, ModelNotFoundError):
+        logger.warning("Either electricity mix or model was not found")
     return NonStreamedChatResponse(**response.dict(), impacts=impacts)
 
 
@@ -65,13 +70,16 @@ async def cohere_async_chat_wrapper(
     request_latency = time.perf_counter() - timer_start
     output_tokens = response.meta.tokens.output_tokens
     model_name = kwargs.get("model", "command-r")
-    impacts = llm_impacts(
-        provider=PROVIDER,
-        model_name=model_name,
-        output_token_count=output_tokens,
-        request_latency=request_latency,
-        electricity_mix_zone=EcoLogits.config.electricity_mix_zone
-    )
+    try:
+        impacts = llm_impacts(
+            provider=PROVIDER,
+            model_name=model_name,
+            output_token_count=output_tokens,
+            request_latency=request_latency,
+            electricity_mix_zone=EcoLogits.config.electricity_mix_zone
+        )
+    except (NoElectricityMixError, ModelNotFoundError):
+            logger.warning("Either electricity mix or model was not found")
     return NonStreamedChatResponse(**response.dict(), impacts=impacts)
 
 
@@ -85,13 +93,16 @@ def cohere_stream_chat_wrapper(
         if event.event_type == "stream-end":
             request_latency = time.perf_counter() - timer_start
             output_tokens = event.response.meta.tokens.output_tokens
-            impacts = llm_impacts(
-                provider=PROVIDER,
-                model_name=model_name,
-                output_token_count=output_tokens,
-                request_latency=request_latency,
-                electricity_mix_zone=EcoLogits.config.electricity_mix_zone
-            )
+            try:
+                impacts = llm_impacts(
+                    provider=PROVIDER,
+                    model_name=model_name,
+                    output_token_count=output_tokens,
+                    request_latency=request_latency,
+                    electricity_mix_zone=EcoLogits.config.electricity_mix_zone
+                )
+            except (NoElectricityMixError, ModelNotFoundError):
+                logger.warning("Either electricity mix or model was not found")
             yield StreamEndStreamedChatResponse(**event.dict(), impacts=impacts)
         else:
             yield event
@@ -107,13 +118,16 @@ async def cohere_async_stream_chat_wrapper(
         if event.event_type == "stream-end":
             request_latency = time.perf_counter() - timer_start
             output_tokens = event.response.meta.tokens.output_tokens
-            impacts = llm_impacts(
-                provider=PROVIDER,
-                model_name=model_name,
-                output_token_count=output_tokens,
-                request_latency=request_latency,
-                electricity_mix_zone=EcoLogits.config.electricity_mix_zone
-            )
+            try:
+                impacts = llm_impacts(
+                    provider=PROVIDER,
+                    model_name=model_name,
+                    output_token_count=output_tokens,
+                    request_latency=request_latency,
+                    electricity_mix_zone=EcoLogits.config.electricity_mix_zone
+                )
+            except (NoElectricityMixError, ModelNotFoundError):
+                logger.warning("Either electricity mix or model was not found")
             yield StreamEndStreamedChatResponse(**event.dict(), impacts=impacts)
         else:
             yield event

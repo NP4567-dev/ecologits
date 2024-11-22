@@ -5,6 +5,8 @@ from typing import Any, Callable, Union
 from wrapt import wrap_function_wrapper
 
 from ecologits._ecologits import EcoLogits
+from ecologits.exceptions import ModelNotFoundError, NoElectricityMixError
+from ecologits.log import logger
 from ecologits.tracers.utils import llm_impacts
 
 try:
@@ -87,13 +89,16 @@ def google_chat_wrapper_non_stream(
     response = wrapped(*args, **kwargs)
     request_latency = time.perf_counter() - timer_start
     model_name = instance.model_name.replace("models/", "")
-    impacts = llm_impacts(
-        provider=PROVIDER,
-        model_name=model_name,  # ?
-        output_token_count=response.usage_metadata.total_token_count,
-        request_latency=request_latency,
-        electricity_mix_zone=EcoLogits.config.electricity_mix_zone,
-    )
+    try:
+        impacts = llm_impacts(
+            provider=PROVIDER,
+            model_name=model_name,  # ?
+            output_token_count=response.usage_metadata.total_token_count,
+            request_latency=request_latency,
+            electricity_mix_zone=EcoLogits.config.electricity_mix_zone,
+        )
+    except (NoElectricityMixError, ModelNotFoundError):
+            logger.warning("Either electricity mix or model was not found")
     if impacts is not None:
         # Convert the response object to a dictionary (model_dump() is not available in the response object)
         response = wrap_from_dict(response.__dict__, impacts)
@@ -111,13 +116,16 @@ def google_chat_wrapper_stream(
     stream = wrapped(*args, **kwargs)
     for chunk in stream:
         request_latency = time.perf_counter() - timer_start
-        impacts = llm_impacts(
-            provider=PROVIDER,
-            model_name=model_name,  # ?
-            output_token_count=chunk.usage_metadata.total_token_count,
-            request_latency=request_latency,
-            electricity_mix_zone=EcoLogits.config.electricity_mix_zone
-        )
+        try:
+            impacts = llm_impacts(
+                provider=PROVIDER,
+                model_name=model_name,  # ?
+                output_token_count=chunk.usage_metadata.total_token_count,
+                request_latency=request_latency,
+                electricity_mix_zone=EcoLogits.config.electricity_mix_zone
+            )
+        except (NoElectricityMixError, ModelNotFoundError):
+            logger.warning("Either electricity mix or model was not found")
         if impacts is not None:
             chunk = wrap_from_dict(chunk.__dict__, impacts) # noqa: PLW2901
         yield chunk
@@ -142,13 +150,16 @@ async def google_async_chat_wrapper_non_stream(
     response = await wrapped(*args, **kwargs)
     request_latency = time.perf_counter() - timer_start
     model_name = instance.model_name.replace("models/", "")
-    impacts = llm_impacts(
-        provider=PROVIDER,
-        model_name=model_name,  # ?
-        output_token_count=response.usage_metadata.total_token_count,
-        request_latency=request_latency,
-        electricity_mix_zone=EcoLogits.config.electricity_mix_zone
-    )
+    try:
+        impacts = llm_impacts(
+            provider=PROVIDER,
+            model_name=model_name,  # ?
+            output_token_count=response.usage_metadata.total_token_count,
+            request_latency=request_latency,
+            electricity_mix_zone=EcoLogits.config.electricity_mix_zone
+        )
+    except (NoElectricityMixError, ModelNotFoundError):
+            logger.warning("Either electricity mix or model was not found")
     if impacts is not None:
         # Convert the response object to a dictionary (model_dump() is not available in the response object)
         response = wrap_from_dict(response.__dict__, impacts, async_mode = True)
@@ -166,13 +177,16 @@ async def google_async_chat_wrapper_stream(  # type: ignore[misc]
     stream = await wrapped(*args, **kwargs)
     async for chunk in stream:
         request_latency = time.perf_counter() - timer_start
-        impacts = llm_impacts(
-            provider=PROVIDER,
-            model_name=model_name,  # ?
-            output_token_count=chunk.usage_metadata.total_token_count,
-            request_latency=request_latency,
-            electricity_mix_zone=EcoLogits.config.electricity_mix_zone
-        )
+        try:
+            impacts = llm_impacts(
+                provider=PROVIDER,
+                model_name=model_name,  # ?
+                output_token_count=chunk.usage_metadata.total_token_count,
+                request_latency=request_latency,
+                electricity_mix_zone=EcoLogits.config.electricity_mix_zone
+            )
+        except (NoElectricityMixError, ModelNotFoundError):
+            logger.warning("Either electricity mix or model was not found")
         if impacts is not None:
             chunk = wrap_from_dict(chunk.__dict__, impacts, async_mode = True) # noqa: PLW2901
         yield chunk

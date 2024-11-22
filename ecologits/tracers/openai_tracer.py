@@ -4,7 +4,9 @@ from typing import Any, Callable, Union
 from wrapt import wrap_function_wrapper
 
 from ecologits._ecologits import EcoLogits
+from ecologits.exceptions import ModelNotFoundError, NoElectricityMixError
 from ecologits.impacts import Impacts
+from ecologits.log import logger
 from ecologits.tracers.utils import llm_impacts
 
 try:
@@ -54,13 +56,16 @@ def openai_chat_wrapper_non_stream(
     response = wrapped(*args, **kwargs)
     request_latency = time.perf_counter() - timer_start
     model_name = response.model
-    impacts = llm_impacts(
-        provider=PROVIDER,
-        model_name=model_name,
-        output_token_count=response.usage.completion_tokens,
-        request_latency=request_latency,
-        electricity_mix_zone=EcoLogits.config.electricity_mix_zone
-    )
+    try:
+        impacts = llm_impacts(
+            provider=PROVIDER,
+            model_name=model_name,
+            output_token_count=response.usage.completion_tokens,
+            request_latency=request_latency,
+            electricity_mix_zone=EcoLogits.config.electricity_mix_zone
+        )
+    except (NoElectricityMixError, ModelNotFoundError):
+            logger.warning("Either electricity mix or model was not found")
     if impacts is not None:
         return ChatCompletion(**response.model_dump(), impacts=impacts)
     else:
@@ -84,13 +89,16 @@ def openai_chat_wrapper_stream(
             token_count += 1
         request_latency = time.perf_counter() - timer_start
         model_name = chunk.model
-        impacts = llm_impacts(
-            provider=PROVIDER,
-            model_name=model_name,
-            output_token_count=token_count,
-            request_latency=request_latency,
-            electricity_mix_zone=EcoLogits.config.electricity_mix_zone
-        )
+        try:
+            impacts = llm_impacts(
+                provider=PROVIDER,
+                model_name=model_name,
+                output_token_count=token_count,
+                request_latency=request_latency,
+                electricity_mix_zone=EcoLogits.config.electricity_mix_zone
+            )
+        except (NoElectricityMixError, ModelNotFoundError):
+            logger.warning("Either electricity mix or model was not found")
         if impacts is not None:
             yield ChatCompletionChunk(**chunk.model_dump(), impacts=impacts)
         else:
@@ -119,13 +127,16 @@ async def openai_async_chat_wrapper_base(
     response = await wrapped(*args, **kwargs)
     request_latency = time.perf_counter() - timer_start
     model_name = response.model
-    impacts = llm_impacts(
-        provider=PROVIDER,
-        model_name=model_name,
-        output_token_count=response.usage.completion_tokens,
-        request_latency=request_latency,
-        electricity_mix_zone=EcoLogits.config.electricity_mix_zone
-    )
+    try:
+        impacts = llm_impacts(
+            provider=PROVIDER,
+            model_name=model_name,
+            output_token_count=response.usage.completion_tokens,
+            request_latency=request_latency,
+            electricity_mix_zone=EcoLogits.config.electricity_mix_zone
+        )
+    except (NoElectricityMixError, ModelNotFoundError):
+            logger.warning("Either electricity mix or model was not found")
     if impacts is not None:
         return ChatCompletion(**response.model_dump(), impacts=impacts)
     else:
@@ -149,13 +160,16 @@ async def openai_async_chat_wrapper_stream(
             token_count += 1
         request_latency = time.perf_counter() - timer_start
         model_name = chunk.model
-        impacts = llm_impacts(
-            provider=PROVIDER,
-            model_name=model_name,
-            output_token_count=token_count,
-            request_latency=request_latency,
-            electricity_mix_zone=EcoLogits.config.electricity_mix_zone
-        )
+        try:
+            impacts = llm_impacts(
+                provider=PROVIDER,
+                model_name=model_name,
+                output_token_count=token_count,
+                request_latency=request_latency,
+                electricity_mix_zone=EcoLogits.config.electricity_mix_zone
+            )
+        except (NoElectricityMixError, ModelNotFoundError):
+            logger.warning("Either electricity mix or model was not found")
         if impacts is not None:
             yield ChatCompletionChunk(**chunk.model_dump(), impacts=impacts)
         else:

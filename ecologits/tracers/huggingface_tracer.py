@@ -6,7 +6,9 @@ from typing import Any, Callable, Union
 from wrapt import wrap_function_wrapper
 
 from ecologits._ecologits import EcoLogits
+from ecologits.exceptions import ModelNotFoundError, NoElectricityMixError
 from ecologits.impacts import Impacts
+from ecologits.log import logger
 from ecologits.tracers.utils import llm_impacts
 
 try:
@@ -63,13 +65,16 @@ def huggingface_chat_wrapper_non_stream(
     request_latency = time.perf_counter() - timer_start
     encoder = tiktoken.get_encoding("cl100k_base")
     output_tokens = len(encoder.encode(response.choices[0].message.content))
-    impacts = llm_impacts(
-        provider=PROVIDER,
-        model_name=instance.model,
-        output_token_count=output_tokens,
-        request_latency=request_latency,
-        electricity_mix_zone=EcoLogits.config.electricity_mix_zone
-    )
+    try:
+        impacts = llm_impacts(
+            provider=PROVIDER,
+            model_name=instance.model,
+            output_token_count=output_tokens,
+            request_latency=request_latency,
+            electricity_mix_zone=EcoLogits.config.electricity_mix_zone
+        )
+    except (NoElectricityMixError, ModelNotFoundError):
+            logger.warning("Either electricity mix or model was not found")
     if impacts is not None:
         return ChatCompletionOutput(**asdict(response), impacts=impacts)
     else:
@@ -88,13 +93,16 @@ def huggingface_chat_wrapper_stream(
     for chunk in stream:
         token_count += 1
         request_latency = time.perf_counter() - timer_start
-        impacts = llm_impacts(
-            provider=PROVIDER,
-            model_name=instance.model,
-            output_token_count=token_count,
-            request_latency=request_latency,
-            electricity_mix_zone=EcoLogits.config.electricity_mix_zone
-        )
+        try:
+            impacts = llm_impacts(
+                provider=PROVIDER,
+                model_name=instance.model,
+                output_token_count=token_count,
+                request_latency=request_latency,
+                electricity_mix_zone=EcoLogits.config.electricity_mix_zone
+            )
+        except (NoElectricityMixError, ModelNotFoundError):
+            logger.warning("Either electricity mix or model was not found")
         if impacts is not None:
             yield ChatCompletionStreamOutput(**asdict(chunk), impacts=impacts)
         else:
@@ -124,13 +132,16 @@ async def huggingface_async_chat_wrapper_non_stream(
     request_latency = time.perf_counter() - timer_start
     encoder = tiktoken.get_encoding("cl100k_base")
     output_tokens = len(encoder.encode(response.choices[0].message.content))
-    impacts = llm_impacts(
-        provider=PROVIDER,
-        model_name=instance.model,
-        output_token_count=output_tokens,
-        request_latency=request_latency,
-        electricity_mix_zone=EcoLogits.config.electricity_mix_zone
-    )
+    try:
+        impacts = llm_impacts(
+            provider=PROVIDER,
+            model_name=instance.model,
+            output_token_count=output_tokens,
+            request_latency=request_latency,
+            electricity_mix_zone=EcoLogits.config.electricity_mix_zone
+        )
+    except (NoElectricityMixError, ModelNotFoundError):
+        logger.warning("Either electricity mix or model was not found")
     if impacts is not None:
         return ChatCompletionOutput(**asdict(response), impacts=impacts)
     else:
@@ -149,13 +160,16 @@ async def huggingface_async_chat_wrapper_stream(
     async for chunk in stream:
         token_count += 1
         request_latency = time.perf_counter() - timer_start
-        impacts = llm_impacts(
-            provider=PROVIDER,
-            model_name=instance.model,
-            output_token_count=token_count,
-            request_latency=request_latency,
-            electricity_mix_zone=EcoLogits.config.electricity_mix_zone
-        )
+        try:
+            impacts = llm_impacts(
+                provider=PROVIDER,
+                model_name=instance.model,
+                output_token_count=token_count,
+                request_latency=request_latency,
+                electricity_mix_zone=EcoLogits.config.electricity_mix_zone
+            )
+        except (NoElectricityMixError, ModelNotFoundError):
+            logger.warning("Either electricity mix or model was not found")
         if impacts is not None:
             yield ChatCompletionStreamOutput(**asdict(chunk), impacts=impacts)
         else:

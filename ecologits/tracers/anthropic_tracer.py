@@ -1,4 +1,3 @@
-import logging
 import time
 from collections.abc import AsyncIterator, Awaitable, Iterator
 from types import TracebackType
@@ -9,6 +8,7 @@ from wrapt import wrap_function_wrapper
 from ecologits._ecologits import EcoLogits
 from ecologits.exceptions import ModelNotFoundError, NoElectricityMixError
 from ecologits.impacts import Impacts
+from ecologits.log import logger
 from ecologits.tracers.utils import llm_impacts
 
 try:
@@ -34,7 +34,6 @@ MessageStreamT = TypeVar("MessageStreamT", bound=_MessageStream)
 AsyncMessageStreamT = TypeVar("AsyncMessageStreamT", bound=_AsyncMessageStream)
 
 
-logger = logging.getLogger(__name__)
 class Message(_Message):
     impacts: Impacts
 
@@ -57,13 +56,16 @@ class MessageStream(_MessageStream):
             elif chunk.type == "content_block_delta" and chunk.delta.type == "text_delta":
                 yield chunk.delta.text
         requests_latency = time.perf_counter() - timer_start
-        self.impacts = llm_impacts(
-            provider=PROVIDER,
-            model_name=model_name,
-            output_token_count=output_tokens,
-            request_latency=requests_latency,
-            electricity_mix_zone=EcoLogits.config.electricity_mix_zone
-        )
+        try:
+            self.impacts = llm_impacts(
+                provider=PROVIDER,
+                model_name=model_name,
+                output_token_count=output_tokens,
+                request_latency=requests_latency,
+                electricity_mix_zone=EcoLogits.config.electricity_mix_zone
+            )
+        except (NoElectricityMixError, ModelNotFoundError):
+            logger.warning("Either electricity mix or model was not found")
 
     def __init__(self, parent) -> None:     # noqa: ANN001
         super().__init__(
@@ -156,13 +158,16 @@ def anthropic_chat_wrapper(
     response = wrapped(*args, **kwargs)
     request_latency = time.perf_counter() - timer_start
     model_name = response.model
-    impacts = llm_impacts(
-        provider=PROVIDER,
-        model_name=model_name,
-        output_token_count=response.usage.output_tokens,
-        request_latency=request_latency,
-        electricity_mix_zone=EcoLogits.config.electricity_mix_zone
-    )
+    try:
+        impacts = llm_impacts(
+            provider=PROVIDER,
+            model_name=model_name,
+            output_token_count=response.usage.output_tokens,
+            request_latency=request_latency,
+            electricity_mix_zone=EcoLogits.config.electricity_mix_zone
+        )
+    except (NoElectricityMixError, ModelNotFoundError):
+        logger.warning("Either electricity mix or model was not found")
     if impacts is not None:
         return Message(**response.model_dump(), impacts=impacts)
     else:
@@ -176,13 +181,16 @@ async def anthropic_async_chat_wrapper(
     response = await wrapped(*args, **kwargs)
     request_latency = time.perf_counter() - timer_start
     model_name = response.model
-    impacts = llm_impacts(
-        provider=PROVIDER,
-        model_name=model_name,
-        output_token_count=response.usage.output_tokens,
-        request_latency=request_latency,
-        electricity_mix_zone=EcoLogits.config.electricity_mix_zone
-    )
+    try:
+        impacts = llm_impacts(
+            provider=PROVIDER,
+            model_name=model_name,
+            output_token_count=response.usage.output_tokens,
+            request_latency=request_latency,
+            electricity_mix_zone=EcoLogits.config.electricity_mix_zone
+        )
+    except (NoElectricityMixError, ModelNotFoundError):
+            logger.warning("Either electricity mix or model was not found")
     if impacts is not None:
         return Message(**response.model_dump(), impacts=impacts)
     else:
